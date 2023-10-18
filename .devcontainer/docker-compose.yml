@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+
+    volumes:
+      - ../..:/workspaces:cached
+
+    # Overrides default command so things don't shut down after the process ends.
+    command: sleep infinity
+
+    # Runs app on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
+    network_mode: service:db
+
+    # Use "forwardPorts" in **devcontainer.json** to forward an app port locally.
+    # (Adding the "ports" property to this file will not forward from a Codespace.)
+
+  es:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.14
+    environment:
+      - xpack.security.enabled=false
+      - "discovery.type=single-node"
+    network_mode: service:db
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.14
+    environment:
+      - ELASTICSEARCH_HOSTS=http://localhost:9200
+    network_mode: service:db
+  
+  redis:
+    image: bitnami/redis
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+    network_mode: service:db
+    volumes:
+      - redis-data:/bitnami/redis/data
+
+
+  db:
+    image: mysql
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_DATABASE: root
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+    # Add "forwardPorts": ["5432"] to **devcontainer.json** to forward PostgreSQL locally.
+    # (Adding the "ports" property to this file will not forward from a Codespace.)
+
+volumes:
+  mysql-data:
+  redis-data:
+  elasticsearch-data:
