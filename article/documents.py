@@ -1,6 +1,10 @@
-from django_elasticsearch_dsl import Document
+from django_elasticsearch_dsl import Document, fields
 from django_elasticsearch_dsl.registries import registry
 from .models import ArticleContentTab
+from elasticsearch_dsl import analysis
+
+ngram_tokenizer = analysis.token_filter("edge_ngram_filter", type="edge_ngram", min_gram=2, max_gram=3)
+ngram_analyzer = analysis.analyzer("edge_ngram_analyzer", tokenizer="standard", filter=["lowercase", ngram_tokenizer])
 
 @registry.register_document
 class CarDocument(Document):
@@ -17,7 +21,6 @@ class CarDocument(Document):
         # The fields of the model you want to be indexed in Elasticsearch
         fields = [
             "id",
-            'author',
             'title',
             'content',
             "created_at"
@@ -36,3 +39,5 @@ class CarDocument(Document):
         # Paginate the django queryset used to populate the index with the specified size
         # (by default it uses the database driver's default setting)
         # queryset_pagination = 5000
+    
+    author = fields.TextField(analyzer=ngram_analyzer)
